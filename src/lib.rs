@@ -1,4 +1,5 @@
 pub mod elevio {
     pub mod elev;
-    pub mod poll;
+    pub(crate) mod interact;
+    pub(crate) mod sock;
 }
