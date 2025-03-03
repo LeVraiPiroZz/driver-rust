@@ -3,7 +3,7 @@ use std::net::TcpStream;
 
 /// TcpStream wrapper with internal, utility functions
 pub(super) struct ElevatorSocket {
-    sock: TcpStream
+    sock: TcpStream,
 }
 
 impl ElevatorSocket {
@@ -77,5 +77,3 @@ impl ElevatorSocket {
         buf[1] != 0
     }
 }
-
-

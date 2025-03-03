@@ -16,13 +16,13 @@ fn main() -> std::io::Result<()> {
     let poll_period = Duration::from_millis(25);
     elevator.event_loop(poll_period);
 
-    let mut dirn = MotorDirection::Down;
+    let mut direction = MotorDirection::Down;
     let one_time_init = cbc::after(Duration::from_millis(100));
 
     loop {
         cbc::select! {
             // One time event to replace the elevator in case of in-between state.
-            recv(one_time_init) -> _ => elevator.motor_direction(dirn),
+            recv(one_time_init) -> _ => elevator.motor_direction(direction),
 
             // Receive events from the elevator
             recv(elevator.event_receiver) -> event => {
@@ -32,18 +32,18 @@ fn main() -> std::io::Result<()> {
                 match event{
                     ElevatorEvent::CallButton{ floor, call } => elevator.call_button_light(floor, call, true),
                     ElevatorEvent::FloorSensor{ floor } => {
-                        dirn = if floor == 0 {
+                        direction = if floor == 0 {
                             MotorDirection::Up
                         } else if floor == elev_num_floors-1 {
                             MotorDirection::Down
                         } else {
-                            dirn
+                            direction
                         };
-                        elevator.motor_direction(dirn);
+                        elevator.motor_direction(direction);
                     }
-                    ElevatorEvent::Obstruction{ obstructed } => elevator.motor_direction(if obstructed { MotorDirection::Stop } else { dirn }),
+                    ElevatorEvent::Obstruction{ obstructed } => elevator.motor_direction(if obstructed { MotorDirection::Stop } else { direction }),
                     ElevatorEvent::StopButton{ stopped } => {
-                        if (stopped) {
+                        if stopped {
                             for f in 0..elev_num_floors {
                                 for c in 0..3 {
                                     elevator.call_button_light(f, c.try_into().unwrap(), false);

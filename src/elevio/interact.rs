@@ -1,10 +1,10 @@
-use std::convert::TryInto;
-use std::thread::spawn;
+use crate::elevio::elev::ElevatorEvent::{CallButton, FloorSensor, Obstruction, StopButton};
 use crate::elevio::elev::{Elevator, ElevatorEvent, ElevatorMessage};
 use crate::elevio::sock::ElevatorSocket;
 use crossbeam_channel::{select, tick, Receiver, Sender};
+use std::convert::TryInto;
+use std::thread::spawn;
 use std::time;
-use crate::elevio::elev::ElevatorEvent::{CallButton, FloorSensor, Obstruction, StopButton};
 
 /// Stores the last sent value for every possible events.
 /// This is used internally to prevent event *flooding* that could take CPU time.
@@ -12,7 +12,7 @@ struct ElevatorCurrentState {
     call_buttons: Vec<[bool; 3]>,
     floor_sensor: u8,
     stop_button: bool,
-    obstruction: bool
+    obstruction: bool,
 }
 
 impl ElevatorCurrentState {
@@ -38,7 +38,7 @@ struct ElevatorInteraction {
     /// Number of floors this elevator has.
     num_floors: u8,
     /// Store the current status of the elevator. Avoids event flooding on the user end.
-    current_state: ElevatorCurrentState
+    current_state: ElevatorCurrentState,
 }
 
 impl Elevator {
@@ -46,9 +46,19 @@ impl Elevator {
     /// This can only be used once per [Elevator] instance, using it again will result in panic.
     pub fn event_loop(&mut self, period: time::Duration) {
         let mut e_interact = ElevatorInteraction {
-            sock: ElevatorSocket::new(self.sock.take().expect("Cannot launch more than one event_loop on an elevator hardware.")),
-            event_sender: self.event_sender.take().expect("Cannot launch more than one event_loop on an elevator hardware."),
-            message_receiver: self.message_receiver.take().expect("Cannot launch more than one event_loop on an elevator hardware."),
+            sock: ElevatorSocket::new(
+                self.sock
+                    .take()
+                    .expect("Cannot launch more than one event_loop on an elevator hardware."),
+            ),
+            event_sender: self
+                .event_sender
+                .take()
+                .expect("Cannot launch more than one event_loop on an elevator hardware."),
+            message_receiver: self
+                .message_receiver
+                .take()
+                .expect("Cannot launch more than one event_loop on an elevator hardware."),
             num_floors: self.num_floors,
             current_state: ElevatorCurrentState::new(self.num_floors),
         };
@@ -91,7 +101,12 @@ impl ElevatorInteraction {
             for c in 0..3 {
                 let v = self.sock.call_button(f, c);
                 if v && self.current_state.call_buttons[f as usize][c as usize] != v {
-                    self.event_sender.send(CallButton { floor: f, call: c.try_into().unwrap() }).unwrap();
+                    self.event_sender
+                        .send(CallButton {
+                            floor: f,
+                            call: c.try_into().unwrap(),
+                        })
+                        .unwrap();
                 }
                 self.current_state.call_buttons[f as usize][c as usize] = v;
             }
@@ -122,7 +137,9 @@ impl ElevatorInteraction {
     fn pool_obstruction_sensor_state(&mut self) {
         let v = self.sock.obstruction();
         if self.current_state.obstruction != v {
-            self.event_sender.send(Obstruction { obstructed: v }).unwrap();
+            self.event_sender
+                .send(Obstruction { obstructed: v })
+                .unwrap();
             self.current_state.obstruction = v;
         }
     }
