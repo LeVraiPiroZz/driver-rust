@@ -5,6 +5,7 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::io::*;
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
+use crate::elevio::elev::MotorDirection::{Down, Stop, Up};
 
 /// Internal struct used to store and get the address of the elevator hardware (or simulator)
 /// This keep access to the address even when the event loop has moved the stream to its own thread.
@@ -116,6 +117,19 @@ pub enum MotorDirection {
     Down = u8::MAX as isize,
     Stop = 0,
     Up = 1,
+}
+
+impl TryFrom<u8> for MotorDirection {
+    type Error = ();
+
+    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
+        match value {
+            u8::MAX => Ok(Down),
+            0 => Ok(Stop),
+            1 => Ok(Up),
+            _ => Err(()),
+        }
+    }
 }
 
 /// Entrypoint to interact with the elevator hardware (or simulator)
