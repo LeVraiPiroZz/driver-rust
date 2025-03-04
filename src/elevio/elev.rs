@@ -40,6 +40,7 @@ impl TcpRemains {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 /// Enum representing an event.
 pub enum ElevatorEvent {
     /// Event received when a user presses a call/order button on the panel.
@@ -68,7 +69,7 @@ impl fmt::Display for ElevatorEvent {
 }
 
 /// Enum representing a message. A message is used to interact with the elevator
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ElevatorMessage {
     /// Message used to set the direction of the elevator
     MotorDirection { direction: MotorDirection },
@@ -85,7 +86,7 @@ pub enum ElevatorMessage {
 }
 
 /// Enum representing type of call button pressed
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum CallType {
     /// Hall call button with direction up
     HallUp = 0,
@@ -110,7 +111,7 @@ impl TryFrom<u8> for CallType {
 
 /// Enum representing the direction of the elevator
 /// Those are self-explanatory.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum MotorDirection {
     Down = u8::MAX as isize,
     Stop = 0,
