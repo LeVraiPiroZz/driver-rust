@@ -121,6 +121,8 @@ impl ElevatorInteraction {
                 self.event_sender.send(FloorSensor { floor: f }).unwrap();
                 self.current_state.floor_sensor = f;
             }
+        } else {
+            self.current_state.floor_sensor = u8::MAX
         }
     }
 
