@@ -48,8 +48,8 @@ pub enum ElevatorEvent {
     /// If the call is a **cab** order, floor represent the destination wanted by the user,
     /// else it's a **hall** order and floor represent the floor where the user pressed the button.
     CallButton { floor: u8, call: CallType },
-    /// Event received when the elevator reach a floor
-    FloorSensor { floor: u8 },
+    /// Event received when the elevator floor sensor state change (Reached floor or left floor)
+    FloorSensor { floor: Option<u8> },
     /// Event received when the elevator door are stuck open.
     Obstruction { obstructed: bool },
     /// Event received in case of emergency stop pressed by a user.

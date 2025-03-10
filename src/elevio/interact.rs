@@ -10,7 +10,7 @@ use std::time;
 /// This is used internally to prevent event *flooding* that could take CPU time.
 struct ElevatorCurrentState {
     call_buttons: Vec<[bool; 3]>,
-    floor_sensor: u8,
+    floor_sensor: Option<u8>,
     stop_button: bool,
     obstruction: bool,
 }
@@ -20,7 +20,7 @@ impl ElevatorCurrentState {
     fn new(num_floors: u8) -> Self {
         Self {
             call_buttons: vec![[false; 3]; num_floors as usize],
-            floor_sensor: u8::MAX,
+            floor_sensor: None,
             stop_button: false,
             obstruction: false,
         }
@@ -114,15 +114,14 @@ impl ElevatorInteraction {
     }
 
     /// Used to poll the current floor.
-    /// Current floor can be None if in-between floor, but this is never transmitted.
+    /// Current floor can be None if in-between floor, or an u8 representing the current floor if not
     fn poll_floor_sensor_state(&mut self) {
-        if let Some(f) = self.sock.floor_sensor() {
-            if f != self.current_state.floor_sensor {
-                self.event_sender.send(FloorSensor { floor: f }).unwrap();
-                self.current_state.floor_sensor = f;
-            }
-        } else {
-            self.current_state.floor_sensor = u8::MAX
+
+
+        let f = self.sock.floor_sensor();
+        if f != self.current_state.floor_sensor {
+            self.event_sender.send(FloorSensor { floor: f }).unwrap();
+            self.current_state.floor_sensor = f;
         }
     }
 

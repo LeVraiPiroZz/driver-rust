@@ -6,10 +6,13 @@ use crossbeam_channel as cbc;
 use driver_rust::elevio::elev as e;
 use driver_rust::elevio::elev::{ElevatorEvent, MotorDirection};
 
+const ELEV_NUM_FLOORS: u8 = 4;
+const LAST_FLOOR: u8 = ELEV_NUM_FLOORS - 1;
+
 fn main() -> std::io::Result<()> {
     // Initialize and connect to the elevator.
-    let elev_num_floors = 4;
-    let mut elevator = e::Elevator::init("localhost:15657", elev_num_floors)?;
+
+    let mut elevator = e::Elevator::init("localhost:15657", ELEV_NUM_FLOORS)?;
     println!("Elevator started:\n{:#?}", elevator);
 
     // Sets a poll period, this should be a small period or the events will be delayed or lost.
@@ -17,13 +20,9 @@ fn main() -> std::io::Result<()> {
     elevator.event_loop(poll_period);
 
     let mut direction = MotorDirection::Down;
-    let one_time_init = cbc::after(Duration::from_millis(100));
 
     loop {
         cbc::select! {
-            // One time event to replace the elevator in case of in-between state.
-            recv(one_time_init) -> _ => elevator.motor_direction(direction),
-
             // Receive events from the elevator
             recv(elevator.event_receiver) -> event => {
                 let event = event.unwrap();
@@ -32,19 +31,17 @@ fn main() -> std::io::Result<()> {
                 match event{
                     ElevatorEvent::CallButton{ floor, call } => elevator.call_button_light(floor, call, true),
                     ElevatorEvent::FloorSensor{ floor } => {
-                        direction = if floor == 0 {
-                            MotorDirection::Up
-                        } else if floor == elev_num_floors-1 {
-                            MotorDirection::Down
-                        } else {
-                            direction
+                        direction = match floor {
+                            Some(0) => MotorDirection::Up,
+                            Some(LAST_FLOOR) => MotorDirection::Down,
+                            _ => direction
                         };
                         elevator.motor_direction(direction);
                     }
                     ElevatorEvent::Obstruction{ obstructed } => elevator.motor_direction(if obstructed { MotorDirection::Stop } else { direction }),
                     ElevatorEvent::StopButton{ stopped } => {
                         if stopped {
-                            for f in 0..elev_num_floors {
+                            for f in 0..ELEV_NUM_FLOORS {
                                 for c in 0..3 {
                                     elevator.call_button_light(f, c.try_into().unwrap(), false);
                                 }
