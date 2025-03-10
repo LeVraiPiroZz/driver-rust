@@ -49,7 +49,7 @@ pub enum ElevatorEvent {
     /// else it's a **hall** order and floor represent the floor where the user pressed the button.
     CallButton { floor: u8, call: CallType },
     /// Event received when the elevator floor sensor state change (Reached floor or left floor)
-    FloorSensor { floor: Option<u8> },
+    FloorSensor { floor: FloorEvent },
     /// Event received when the elevator door are stuck open.
     Obstruction { obstructed: bool },
     /// Event received in case of emergency stop pressed by a user.
@@ -84,6 +84,27 @@ pub enum ElevatorMessage {
     DoorOpenLight { on: bool },
     /// Message used to control the stop (emergency) button light of the elevator
     StopButtonLight { on: bool },
+}
+
+/// Enum representing a floor sensor message. It is sent only when a change of value is observed.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum FloorEvent {
+    /// Represents a floor sensor triggering on a specific floor.
+    AtFloor(u8),
+
+    /// Represents the absence of sensor triggered on the hardware, we must assume the elevator is between floors.
+    /// It is your job to keep track of which floors the elevator is in-between.
+    BetweenFloors()
+}
+
+impl From<Option<u8>> for FloorEvent {
+    /// Handle conversion from native TCP elevator messages to user friendly enum
+    fn from(value: Option<u8>) -> Self {
+        match value {
+            None => FloorEvent::BetweenFloors(),
+            Some(floor) => FloorEvent::AtFloor(floor)
+        }
+    }
 }
 
 /// Enum representing type of call button pressed

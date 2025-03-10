@@ -1,5 +1,5 @@
 use crate::elevio::elev::ElevatorEvent::{CallButton, FloorSensor, Obstruction, StopButton};
-use crate::elevio::elev::{Elevator, ElevatorEvent, ElevatorMessage};
+use crate::elevio::elev::{Elevator, ElevatorEvent, ElevatorMessage, FloorEvent};
 use crate::elevio::sock::ElevatorSocket;
 use crossbeam_channel::{select, tick, Receiver, Sender};
 use std::convert::TryInto;
@@ -10,7 +10,7 @@ use std::time;
 /// This is used internally to prevent event *flooding* that could take CPU time.
 struct ElevatorCurrentState {
     call_buttons: Vec<[bool; 3]>,
-    floor_sensor: Option<u8>,
+    floor_sensor: Option<FloorEvent>,
     stop_button: bool,
     obstruction: bool,
 }
@@ -116,12 +116,10 @@ impl ElevatorInteraction {
     /// Used to poll the current floor.
     /// Current floor can be None if in-between floor, or an u8 representing the current floor if not
     fn poll_floor_sensor_state(&mut self) {
-
-
-        let f = self.sock.floor_sensor();
-        if f != self.current_state.floor_sensor {
+        let f: FloorEvent = self.sock.floor_sensor().into();
+        if Some(f) != self.current_state.floor_sensor {
             self.event_sender.send(FloorSensor { floor: f }).unwrap();
-            self.current_state.floor_sensor = f;
+            self.current_state.floor_sensor = Some(f);
         }
     }
 
